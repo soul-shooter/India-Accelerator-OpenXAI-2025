@@ -1,103 +1,84 @@
-import Image from "next/image";
+// app/page.tsx
+"use client";
+import { useState } from "react";
 
-export default function Home() {
+export default function Page() {
+  const [topic, setTopic] = useState("");
+  const [difficulty, setDifficulty] = useState("easy");
+  const [quiz, setQuiz] = useState<any[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [raw, setRaw] = useState<string>("");
+
+  async function generate() {
+    setLoading(true);
+    setQuiz(null);
+    setRaw("");
+
+    try {
+      const res = await fetch("/api/quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, difficulty }),
+      });
+      const data = await res.json();
+
+      if (data.success && Array.isArray(data.quiz)) {
+        setQuiz(data.quiz);
+      } else {
+        // show raw output (debug) so we can fix prompt
+        setRaw(JSON.stringify(data, null, 2));
+      }
+    } catch (e) {
+      setRaw(String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div style={{ maxWidth: 800, margin: "40px auto", color: "#ddd", fontFamily: "system-ui, Arial" }}>
+      <h1>🎯 Quiz Generator</h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      <div style={{ marginTop: 12 }}>
+        <input
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+          placeholder="Enter topic (e.g., Blockchain basics)"
+          style={{ padding: 8, width: "60%", marginRight: 8 }}
+        />
+        <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} style={{ padding: 8 }}>
+          <option value="easy">easy</option>
+          <option value="medium">medium</option>
+          <option value="hard">hard</option>
+        </select>
+        <button onClick={generate} style={{ marginLeft: 8, padding: "8px 12px" }}>Generate</button>
+      </div>
+
+      {loading && <p style={{ marginTop: 16 }}>⏳ Generating — please wait...</p>}
+
+      {quiz && (
+        <div style={{ marginTop: 16 }}>
+          {quiz.map((q, i) => (
+            <div key={i} style={{ border: "1px solid #444", padding: 12, marginBottom: 10 }}>
+              <div style={{ fontWeight: 700 }}>{i + 1}. {q.question}</div>
+              <ul style={{ marginTop: 8 }}>
+                {q.options && q.options.map((opt:string, j:number) => (
+                  <li key={j}>{String.fromCharCode(65 + j)}. {opt}</li>
+                ))}
+              </ul>
+              <div style={{ color: "lightgreen" }}>Answer: {typeof q.answer === "number" ? String.fromCharCode(65 + q.answer) : q.answer}</div>
+            </div>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+
+      {raw && (
+        <div style={{ marginTop: 20 }}>
+          <h3>Raw (model / error)</h3>
+          <pre style={{ background: "#111", color: "#fff", padding: 12 }}>{raw}</pre>
+          <p>Copy this raw text and paste it into the chat with me if parsing fails — I'll fix the prompt for you.</p>
+        </div>
+      )}
     </div>
   );
 }
